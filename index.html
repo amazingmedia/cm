@@ -899,20 +899,3 @@
     </script>
 </body>
 </html>
-```
-
-### ၂။ Vercel မှာ Deploy လုပ်နည်း (အဆင့်ဆင့်)
-
-**GitHub Repository ပြင်ဆင်ခြင်း:**
-1.  အပေါ်က ကုဒ်ကို `index.html` နာမည်နဲ့ GitHub Repo ထဲမှာ တင်ပါ။
-2.  `api` ဆိုတဲ့ Folder အသစ်တစ်ခု ဆောက်ပါ။
-3.  အဲ့ဒီ `api` folder ထဲမှာ `config.js` ဆိုတဲ့ ဖိုင်တစ်ခု ဆောက်ပြီး အောက်က ကုဒ်ကို ကူးထည့်ပါ။
-
-```javascript
-// api/config.js (Vercel Serverless Function)
-export default function handler(req, res) {
-  res.status(200).json({
-    TMDB_KEY: process.env.TMDB_KEY,
-    GEMINI_KEY: process.env.GEMINI_KEY,
-  });
-}
