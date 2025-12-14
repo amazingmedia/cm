@@ -111,6 +111,18 @@
                     <input type="text" id="titleInput" value="The First Ride" class="input-field font-bold text-white">
                 </div>
 
+                <!-- Title Size & Position Controls -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="input-label text-blue-400">Title Size</label>
+                        <input type="number" id="titleSizeInput" value="76" class="input-field text-center font-bold">
+                    </div>
+                    <div>
+                        <label class="input-label text-emerald-400">Position Y</label>
+                        <input type="number" id="detailsYInput" value="0" placeholder="+/-" class="input-field text-center font-bold">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-3 gap-2">
                     <div>
                         <label class="input-label">Year</label>
@@ -173,6 +185,18 @@
                     <h3 class="text-[10px] font-bold text-slate-500 uppercase">Channel Info</h3>
                 </div>
 
+                <!-- Channel Name Size & Position Controls -->
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                        <label class="input-label text-blue-400">Name Size</label>
+                        <input type="number" id="channelNameSizeInput" value="40" class="input-field text-center font-bold">
+                    </div>
+                    <div>
+                        <label class="input-label text-emerald-400">Position Y</label>
+                        <input type="number" id="channelYInput" value="0" placeholder="+/-" class="input-field text-center font-bold">
+                    </div>
+                </div>
+
                 <div class="flex gap-2">
                      <div class="w-12 flex-shrink-0">
                         <label class="input-label">Logo</label>
@@ -194,7 +218,7 @@
                                 <input type="text" id="linkInput" value="@mmsub2011" class="input-field text-blue-400">
                             </div>
                             <div class="w-16">
-                                <label class="input-label">Size</label>
+                                <label class="input-label">Link Size</label>
                                 <input type="number" id="urlSizeInput" value="20" class="input-field text-center font-bold">
                             </div>
                         </div>
@@ -260,6 +284,8 @@
         // User Inputs map
         const inputs = {
             title: document.getElementById('titleInput'),
+            titleSize: document.getElementById('titleSizeInput'), // New
+            detailsY: document.getElementById('detailsYInput'), // New
             badge: document.getElementById('badgeInput'),
             year: document.getElementById('yearInput'),
             rating: document.getElementById('ratingInput'),
@@ -267,6 +293,8 @@
             tagline: document.getElementById('taglineInput'),
             credit: document.getElementById('creditInput'),
             channelName: document.getElementById('channelNameInput'),
+            channelNameSize: document.getElementById('channelNameSizeInput'), // New
+            channelY: document.getElementById('channelYInput'), // New
             link: document.getElementById('linkInput'),
             url: document.getElementById('urlInput'),
             urlSize: document.getElementById('urlSizeInput'),
@@ -293,7 +321,7 @@
             if(savedKey) inputs.apiKey.value = savedKey;
 
             // 2. Load Text Inputs
-            const textKeys = ['title', 'year', 'rating', 'runtime', 'tagline', 'badge', 'channelName', 'link', 'url', 'urlSize', 'credit', 'blur'];
+            const textKeys = ['title', 'titleSize', 'detailsY', 'year', 'rating', 'runtime', 'tagline', 'badge', 'channelName', 'channelNameSize', 'channelY', 'link', 'url', 'urlSize', 'credit', 'blur'];
             textKeys.forEach(key => {
                 const saved = localStorage.getItem('saved_' + key);
                 if(saved !== null) {
@@ -312,7 +340,6 @@
             loadSavedImage('logo', 'saved_logo_img');
 
             // 4. Initial Draw
-            // Use timeout to ensure images are loaded from strings
             setTimeout(() => {
                  if(!localStorage.getItem('saved_bg_img') && assets.bg.complete && assets.poster.complete) {
                     draw();
@@ -331,11 +358,6 @@
                     draw();
                 };
                 img.src = savedBase64;
-            } else {
-                // If no saved image, default is already in HTML img tags, 
-                // but we need to make sure 'assets' points to them if they loaded.
-                // The 'assets' object is already pointing to DOM elements, so if they load, it works.
-                // We just trigger draw in window.onload
             }
         }
         
@@ -419,11 +441,6 @@
             img.onload = function() {
                 assets[key] = img;
                 draw();
-                // We generally don't save Auto-fetched images to localstorage automatically to save space
-                // unless user explicitly wants to. But for consistency with "save state", we can try.
-                // However, tainted canvas or CORS might block getting dataURL from these if not careful.
-                // For now, we rely on text saving. User can re-fetch easily.
-                // OR we can try to save it if CORS allows:
                 try {
                     const canvas = document.createElement('canvas');
                     canvas.width = img.width;
@@ -540,39 +557,46 @@
 
             // 5. Text Info
             const textX = leftMargin + posterWidth + 40; 
+            
+            // Apply Details Offset
+            const detailsOffsetY = parseInt(inputs.detailsY.value) || 0;
+            const textBaseY = posterY + 10 + detailsOffsetY;
+
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
             
             const titleText = inputs.title.value;
-            let titleFontSize = 76;
-            if(titleText.length > 20) titleFontSize = 60;
-            if(titleText.length > 30) titleFontSize = 48;
+            // Use User Defined Title Size
+            const titleFontSize = inputs.titleSize.value || 76;
             
             ctx.font = `900 ${titleFontSize}px Roboto, sans-serif`;
             ctx.shadowColor = "rgba(0,0,0,0.8)";
             ctx.shadowBlur = 10;
             ctx.shadowOffsetY = 4;
-            ctx.fillText(titleText, textX, posterY + 10); 
+            ctx.fillText(titleText, textX, textBaseY); 
 
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
             ctx.font = '500 24px Roboto, sans-serif';
             ctx.fillStyle = '#dddddd';
             const metaString = `${inputs.year.value}   •   Rating: ${inputs.rating.value}   •   ${inputs.runtime.value}`;
-            const titleHeight = titleFontSize * 1.2;
-            ctx.fillText(metaString, textX, posterY + 10 + titleHeight + 10);
+            const titleHeight = parseInt(titleFontSize) * 1.2;
+            ctx.fillText(metaString, textX, textBaseY + titleHeight + 10);
 
             ctx.font = 'italic 400 26px Roboto, sans-serif';
             ctx.fillStyle = '#aaaaaa';
-            ctx.fillText(inputs.tagline.value, textX, posterY + 10 + titleHeight + 10 + 40);
+            ctx.fillText(inputs.tagline.value, textX, textBaseY + titleHeight + 10 + 40);
             
             ctx.textBaseline = 'alphabetic';
 
             // 6. Footer Content
             const logoSize = 100;
+            
+            // Apply Channel Info Offset
+            const channelOffsetY = parseInt(inputs.channelY.value) || 0;
             const logoX = textX; 
-            const logoY = posterBottomY - logoSize;
+            const logoY = (posterBottomY - logoSize) + channelOffsetY;
 
             ctx.save();
             ctx.beginPath();
@@ -588,7 +612,9 @@
             const footerTextX = logoX + logoSize + 30;
             const logoCenterY = logoY + (logoSize/2);
             
-            ctx.font = 'bold 40px Padauk, sans-serif';
+            // Use User Defined Channel Name Size
+            const channelNameSize = inputs.channelNameSize.value || 40;
+            ctx.font = `bold ${channelNameSize}px Padauk, sans-serif`;
             ctx.fillStyle = '#ffffff';
             ctx.fillText(inputs.channelName.value, footerTextX, logoCenterY - 15);
 
