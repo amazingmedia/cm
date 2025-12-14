@@ -90,6 +90,9 @@
 
             <!-- API Keys Section -->
             <div id="apiKeySection" class="hidden p-3 bg-black/40 rounded border border-slate-700 space-y-2 mb-2">
+                <div id="vercelStatus" class="hidden mb-2 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] text-emerald-500">
+                    ✅ Keys loaded from Vercel Environment.
+                </div>
                 <div>
                     <label class="input-label">TMDB API Key</label>
                     <input type="password" id="apiKeyInput" placeholder="Paste TMDB Key" class="input-field" onchange="saveApiKeys()">
@@ -297,7 +300,7 @@
                     <button onclick="copyPostText()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-bold transition">
                         Copy
                     </button>
-                    <!-- NEW: Character Counter -->
+                    <!-- Character Counter -->
                     <span id="charCount" class="text-[10px] text-slate-500 font-mono ml-auto">0/1024</span>
                 </div>
 
@@ -365,12 +368,33 @@
             localStorage.setItem('saved_' + key, value);
         }
 
-        window.onload = function() {
-            // Load API Keys
-            if(localStorage.getItem('tmdb_api_key')) inputs.apiKey.value = localStorage.getItem('tmdb_api_key');
-            if(localStorage.getItem('gemini_api_key')) inputs.geminiKey.value = localStorage.getItem('gemini_api_key');
+        window.onload = async function() {
+            // 1. Try to fetch Config from Vercel (api/config.js)
+            try {
+                const res = await fetch('/api/config');
+                if(res.ok) {
+                    const config = await res.json();
+                    if(config.TMDB_KEY) {
+                        inputs.apiKey.value = config.TMDB_KEY;
+                    }
+                    if(config.GEMINI_KEY) {
+                        inputs.geminiKey.value = config.GEMINI_KEY;
+                    }
+                    if(config.TMDB_KEY || config.GEMINI_KEY) {
+                        document.getElementById('vercelStatus').classList.remove('hidden');
+                    }
+                }
+            } catch(e) { console.log('Running locally or no API endpoint.'); }
 
-            // Load Text Inputs
+            // 2. Load API Keys from LocalStorage if NOT set by Vercel
+            if(!inputs.apiKey.value && localStorage.getItem('tmdb_api_key')) {
+                inputs.apiKey.value = localStorage.getItem('tmdb_api_key');
+            }
+            if(!inputs.geminiKey.value && localStorage.getItem('gemini_api_key')) {
+                inputs.geminiKey.value = localStorage.getItem('gemini_api_key');
+            }
+
+            // 3. Load Text Inputs
             const textKeys = ['title', 'titleSize', 'detailsY', 'year', 'rating', 'runtime', 'tagline', 'badge', 'channelName', 'channelNameSize', 'channelY', 'link', 'url', 'urlSize', 'credit', 'blur', 'privateLink'];
             textKeys.forEach(key => {
                 const saved = localStorage.getItem('saved_' + key);
@@ -875,3 +899,20 @@
     </script>
 </body>
 </html>
+```
+
+### ၂။ Vercel မှာ Deploy လုပ်နည်း (အဆင့်ဆင့်)
+
+**GitHub Repository ပြင်ဆင်ခြင်း:**
+1.  အပေါ်က ကုဒ်ကို `index.html` နာမည်နဲ့ GitHub Repo ထဲမှာ တင်ပါ။
+2.  `api` ဆိုတဲ့ Folder အသစ်တစ်ခု ဆောက်ပါ။
+3.  အဲ့ဒီ `api` folder ထဲမှာ `config.js` ဆိုတဲ့ ဖိုင်တစ်ခု ဆောက်ပြီး အောက်က ကုဒ်ကို ကူးထည့်ပါ။
+
+```javascript
+// api/config.js (Vercel Serverless Function)
+export default function handler(req, res) {
+  res.status(200).json({
+    TMDB_KEY: process.env.TMDB_KEY,
+    GEMINI_KEY: process.env.GEMINI_KEY,
+  });
+}
