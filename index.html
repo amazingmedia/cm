@@ -540,7 +540,7 @@
             }
         }
 
-        // --- GEMINI AI POST GENERATOR (STRICT SHORT) ---
+        // --- GEMINI AI POST GENERATOR (USER STYLE + STRICT LENGTH) ---
         async function generateAIPost() {
             const loading = document.getElementById('aiLoading');
             const btnText = document.getElementById('aiBtnText');
@@ -568,27 +568,41 @@
             const year = movie.release_date ? movie.release_date.split('-')[0] : "N/A";
             const genres = movie.genres ? movie.genres.map(g => g.name).join(', ') : "Movie";
 
-            // FEW-SHOT PROMPTING WITH STRICT LENGTH CONSTRAINT
+            // PROMPT WITH USER STYLE & STRICT LENGTH CONSTRAINT
             const prompt = `
-            You are a professional Myanmar Movie Channel Admin on Telegram. 
-            Write a SHORT movie recommendation post in Burmese for the movie "${movie.title}" (${year}).
+            You are a professional Myanmar Movie Channel Admin on Telegram.
+            Your task is to write a SHORT movie recommendation post in Burmese based on the provided movie data.
 
             Movie Data:
+            - Title: ${movie.title}
+            - Year: ${year}
             - Director: ${director}
             - Cast: ${cast}
-            - Genre: ${genres}
+            - Genres: ${genres}
             - Plot: ${movie.overview || "No synopsis available."}
 
-            STRICTLY FOLLOW THIS WRITING STYLE AND FORMAT:
+            STRICTLY FOLLOW THIS STYLE AND FORMAT BASED ON THESE EXAMPLES:
 
-            1. **Header**: "${movie.title} (${year}) *********************" (Keep English Title).
-            2. **Intro**: A very short, engaging intro (1 sentence). Mention genre/cast.
-            3. **Separator**: " - ဇာတ်လမ်းအကျဉ်း -"
-            4. **Plot**: SUMMARIZE the plot in Burmese. Do NOT translate the whole thing. Keep it strictly under 5 sentences. Focus on the main conflict.
-            5. **Conclusion**: A short closing sentence.
-            6. **Constraint**: Total response length MUST be under 600 characters.
-            7. **Tone**: Casual, Friendly.
-            8. **No Links**: Do not output links.
+            [EXAMPLE 1]
+            The First Ride (2025) ********************* IMDb Rating (6.9) Kang Ha-Neul, Kim Young-Kwang... တို့လို နာမည်ကြီး မင်းသား မင်းသမီးတွေ ပါဝင်သရုပ်ဆောင်ထားတဲ့ ရုံတင် ဟာသကားသစ်လေး ထွက်ရှိလာပြီနော်။ ... ကြည့်ရင်း ရင်ထဲ နွေးထွေးကြည်နူးရစေဦးမှာ အမှန်ပါပဲ။
+            - ဇာတ်လမ်းအကျဉ်း -
+            တစ်နေ့မှာ သုံးနာရီပဲ အိပ်ရလောက်တဲ့အထိ... (Short Storytelling)... ဆက်လက်ကြည့်ရှုပေးကြပါဦးရှင်။
+
+            [EXAMPLE 2]
+            Time to Hunt (2020) ******************** ဒီတစ်ခါမှာတော့ crime, action ဇာတ်လမ်းအမျိုးအစားတွေကို သဘောကျတဲ့ ပရိသတ်ကြီးအတွက်... Taxi Driver က Lee Je Hoon... တို့ ပါဝင်တာကြောင့် cast နဲ့တင် ရှယ်ဖြစ်နေပြီနော် ..
+            —— ဇာတ်လမ်းအကျဉ်း ——
+            စီးပွားပျက်ကပ် ကြုံနေရတဲ့ ကိုးရီးယားနိုင်ငံရဲ့... (Short Storytelling)... ဒီရုပ်ရှင်မှာ ကြည့်ရှုခံစားနိုင်မှာပဲဖြစ်ပါတယ်။
+
+            [INSTRUCTIONS]
+            1. **Header**: Use the English Movie Title and Year followed by asterisks. e.g. "${movie.title} (${year}) *********************".
+            2. **Intro**: Write a warm, enthusiastic introduction in Burmese (1-2 sentences). Mention key actors and genre. Use phrases like "မိတ်ဆက်ပေးချင်ပါတယ်" or "တင်ဆက်ပေးလိုက်ပါတယ်".
+            3. **Separator**: Use " - ဇာတ်လမ်းအကျဉ်း - " or similar.
+            4. **Plot**: Translate and adapt the plot into a compelling Burmese narrative. Do not just translate sentence by sentence. Write it like a story being told.
+            5. **CRITICAL CONSTRAINT**: The Plot summary MUST be concise (under 5 sentences). The TOTAL character count of the entire post MUST be under 600 characters to avoid Telegram errors.
+            6. **Closing**: End with an inviting sentence like "ဆက်လက်ရှုစားပေးကြပါဦးရှင်" or "ကြည့်ရှုခံစားနိုင်မှာပဲဖြစ်ပါတယ်".
+            7. **Tone**: Casual, Admin-like, Engaging.
+            8. **Language**: Burmese (Unicode). Keep the Movie Title in English.
+            9. **No Links**: Do not output any links.
             `;
 
             try {
