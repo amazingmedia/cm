@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Thumbnail Generator</title>
+    <title>Movie Thumbnail & Post Generator</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,9 +25,9 @@
             background-color: #1e293b;
             border: 1px solid #334155;
             color: #f1f5f9;
-            padding: 0.4rem 0.6rem; /* Smaller padding */
+            padding: 0.4rem 0.6rem;
             border-radius: 0.375rem;
-            font-size: 0.75rem; /* Smaller font */
+            font-size: 0.75rem;
             width: 100%;
             transition: all 0.2s;
             height: 32px;
@@ -39,7 +39,7 @@
         }
         .input-label {
             display: block;
-            font-size: 0.65rem; /* Smaller label */
+            font-size: 0.65rem;
             font-weight: 600;
             color: #64748b;
             margin-bottom: 0.1rem;
@@ -63,6 +63,10 @@
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px;
         }
+
+        /* Loader Animation */
+        .loader { border-top-color: #3b82f6; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="w-full flex flex-col md:flex-row h-screen overflow-hidden">
@@ -77,17 +81,24 @@
             </h1>
             <div class="flex gap-2">
                 <button onclick="clearStorage()" class="text-[10px] bg-rose-900/30 hover:bg-rose-900/50 px-2 py-1 rounded text-rose-400 border border-rose-900/50">Reset</button>
-                <button onclick="document.getElementById('apiKeySection').classList.toggle('hidden')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-400">API Key</button>
+                <button onclick="document.getElementById('apiKeySection').classList.toggle('hidden')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-400">Keys</button>
             </div>
         </div>
 
         <!-- Scrollable Content -->
         <div class="flex-1 px-4 py-4 space-y-5 overflow-y-auto custom-scroll">
 
-            <!-- Hidden API Section -->
+            <!-- API Keys Section -->
             <div id="apiKeySection" class="hidden p-3 bg-black/40 rounded border border-slate-700 space-y-2 mb-2">
-                <label class="input-label">TMDB API Key</label>
-                <input type="password" id="apiKeyInput" placeholder="Paste Key Here" class="input-field" onchange="saveApiKey()">
+                <div>
+                    <label class="input-label">TMDB API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Paste TMDB Key" class="input-field" onchange="saveApiKeys()">
+                </div>
+                <div>
+                    <label class="input-label text-blue-400">Gemini API Key</label>
+                    <input type="password" id="geminiKeyInput" placeholder="Paste Gemini Key" class="input-field border-blue-900/50 focus:border-blue-500" onchange="saveApiKeys()">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[9px] text-blue-500 underline block text-right mt-1">Get Gemini Key</a>
+                </div>
             </div>
 
             <!-- Auto-Fill (Compact) -->
@@ -251,16 +262,51 @@
         </div>
     </div>
 
-    <!-- Right Panel: Preview -->
-    <div class="flex-1 bg-black flex items-center justify-center p-4 md:p-8 relative overflow-hidden bg-[#050505]">
-        <!-- Subtle Pattern -->
-        <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px); background-size: 20px 20px;"></div>
+    <!-- Right Panel: Preview & Post Generator -->
+    <div class="flex-1 bg-[#050505] flex flex-col items-center justify-start relative overflow-y-auto custom-scroll">
         
-        <div class="relative w-full max-w-5xl shadow-2xl rounded overflow-hidden border border-slate-800">
-            <div class="aspect-video w-full relative">
-                <canvas id="mainCanvas" width="1280" height="720" class="w-full h-full object-contain"></canvas>
+        <!-- 1. Canvas Preview -->
+        <div class="w-full p-4 md:p-8 flex-shrink-0 relative">
+             <!-- Subtle Pattern -->
+            <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: linear-gradient(#1e293b 1px, transparent 1px), linear-gradient(90deg, #1e293b 1px, transparent 1px); background-size: 20px 20px;"></div>
+            
+            <div class="relative w-full max-w-5xl mx-auto shadow-2xl rounded overflow-hidden border border-slate-800">
+                <div class="aspect-video w-full relative">
+                    <canvas id="mainCanvas" width="1280" height="720" class="w-full h-full object-contain"></canvas>
+                </div>
             </div>
         </div>
+
+        <!-- 2. Simple Post Generator Section -->
+        <div class="w-full max-w-5xl mx-auto px-4 md:px-8 pb-10">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl">
+                
+                <!-- Toolbar -->
+                <div class="flex items-center gap-3 mb-3">
+                    <h3 class="text-sm font-bold text-white whitespace-nowrap">📝 Telegram Post</h3>
+                    
+                    <div class="flex-1 flex gap-2">
+                        <input type="text" id="privateLinkInput" placeholder="Private Movie Link (Optional)" class="input-field text-xs bg-slate-800 border-slate-700">
+                    </div>
+
+                    <button onclick="generateAIPost()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded text-xs font-bold transition flex items-center gap-1 shadow-lg shadow-emerald-900/30 whitespace-nowrap">
+                        <span id="aiBtnText">Write with AI</span>
+                        <div id="aiLoading" class="hidden w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
+                    </button>
+                    
+                    <button onclick="copyPostText()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded text-xs font-bold transition">
+                        Copy
+                    </button>
+                    <!-- NEW: Character Counter -->
+                    <span id="charCount" class="text-[10px] text-slate-500 font-mono ml-auto">0/1024</span>
+                </div>
+
+                <!-- Textarea -->
+                <textarea id="postOutput" class="w-full h-48 bg-slate-950 border border-slate-800 rounded-lg p-3 text-sm leading-relaxed text-slate-300 focus:border-blue-500 focus:outline-none custom-scroll resize-none font-sans" placeholder="Movie recommendation post will appear here..."></textarea>
+                
+            </div>
+        </div>
+
     </div>
 
     <!-- Hidden Assets -->
@@ -274,6 +320,9 @@
         const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
 
+        // Global State for Movie Data
+        let currentMovieData = null;
+
         // State objects to hold image data
         const assets = {
             bg: document.getElementById('defaultBg'),
@@ -284,8 +333,8 @@
         // User Inputs map
         const inputs = {
             title: document.getElementById('titleInput'),
-            titleSize: document.getElementById('titleSizeInput'), // New
-            detailsY: document.getElementById('detailsYInput'), // New
+            titleSize: document.getElementById('titleSizeInput'),
+            detailsY: document.getElementById('detailsYInput'),
             badge: document.getElementById('badgeInput'),
             year: document.getElementById('yearInput'),
             rating: document.getElementById('ratingInput'),
@@ -293,8 +342,8 @@
             tagline: document.getElementById('taglineInput'),
             credit: document.getElementById('creditInput'),
             channelName: document.getElementById('channelNameInput'),
-            channelNameSize: document.getElementById('channelNameSizeInput'), // New
-            channelY: document.getElementById('channelYInput'), // New
+            channelNameSize: document.getElementById('channelNameSizeInput'),
+            channelY: document.getElementById('channelYInput'),
             link: document.getElementById('linkInput'),
             url: document.getElementById('urlInput'),
             urlSize: document.getElementById('urlSizeInput'),
@@ -302,44 +351,52 @@
             posterUpload: document.getElementById('posterInput'),
             logoUpload: document.getElementById('logoInput'),
             apiKey: document.getElementById('apiKeyInput'),
+            geminiKey: document.getElementById('geminiKeyInput'),
             search: document.getElementById('searchInput'),
             blur: document.getElementById('blurInput'),
-            blurDisplay: document.getElementById('blurValueDisplay')
+            blurDisplay: document.getElementById('blurValueDisplay'),
+            privateLink: document.getElementById('privateLinkInput'),
+            postOutput: document.getElementById('postOutput')
         };
 
         // --- STORAGE & INIT LOGIC ---
 
-        // Helper to save text inputs
         function saveInputState(key, value) {
             localStorage.setItem('saved_' + key, value);
         }
 
-        // Initialize
         window.onload = function() {
-            // 1. Load API Key
-            const savedKey = localStorage.getItem('tmdb_api_key');
-            if(savedKey) inputs.apiKey.value = savedKey;
+            // Load API Keys
+            if(localStorage.getItem('tmdb_api_key')) inputs.apiKey.value = localStorage.getItem('tmdb_api_key');
+            if(localStorage.getItem('gemini_api_key')) inputs.geminiKey.value = localStorage.getItem('gemini_api_key');
 
-            // 2. Load Text Inputs
-            const textKeys = ['title', 'titleSize', 'detailsY', 'year', 'rating', 'runtime', 'tagline', 'badge', 'channelName', 'channelNameSize', 'channelY', 'link', 'url', 'urlSize', 'credit', 'blur'];
+            // Load Text Inputs
+            const textKeys = ['title', 'titleSize', 'detailsY', 'year', 'rating', 'runtime', 'tagline', 'badge', 'channelName', 'channelNameSize', 'channelY', 'link', 'url', 'urlSize', 'credit', 'blur', 'privateLink'];
             textKeys.forEach(key => {
                 const saved = localStorage.getItem('saved_' + key);
                 if(saved !== null) {
                     if(key === 'blur') {
                         inputs.blur.value = saved;
                         inputs.blurDisplay.innerText = saved + "px";
-                    } else {
+                    } else if (inputs[key]) {
                         inputs[key].value = saved;
                     }
                 }
             });
 
-            // 3. Load Images from LocalStorage
+            // LOAD SAVED MOVIE DATA FOR AI (PERSISTENCE FIX)
+            const savedMovieData = localStorage.getItem('current_movie_data');
+            if(savedMovieData) {
+                try {
+                    currentMovieData = JSON.parse(savedMovieData);
+                } catch(e) { console.error('Error loading saved movie data'); }
+            }
+
+            // Load Images
             loadSavedImage('bg', 'saved_bg_img');
             loadSavedImage('poster', 'saved_poster_img');
             loadSavedImage('logo', 'saved_logo_img');
 
-            // 4. Initial Draw
             setTimeout(() => {
                  if(!localStorage.getItem('saved_bg_img') && assets.bg.complete && assets.poster.complete) {
                     draw();
@@ -361,7 +418,6 @@
             }
         }
         
-        // Reset Function
         function clearStorage() {
             if(confirm('Reset all saved data?')) {
                 localStorage.clear();
@@ -370,9 +426,10 @@
         }
 
 
-        // --- API & SEARCH LOGIC ---
-        function saveApiKey() {
+        // --- API LOGIC ---
+        function saveApiKeys() {
             localStorage.setItem('tmdb_api_key', inputs.apiKey.value);
+            localStorage.setItem('gemini_api_key', inputs.geminiKey.value);
         }
 
         async function fetchMovieData() {
@@ -382,7 +439,7 @@
 
             if(!key) {
                 document.getElementById('apiKeySection').classList.remove('hidden');
-                status.innerText = "Please enter API Key!";
+                status.innerText = "Please enter TMDB Key!";
                 status.classList.remove('hidden');
                 status.className = "text-[10px] text-rose-400 pl-1";
                 return;
@@ -394,6 +451,7 @@
             status.className = "text-[10px] text-blue-400 pl-1";
 
             try {
+                // 1. Search ID
                 const searchRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${key}&query=${encodeURIComponent(query)}`);
                 const searchData = await searchRes.json();
 
@@ -404,10 +462,16 @@
                 }
 
                 const movie = searchData.results[0];
-                const detailRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${key}`);
+                
+                // 2. Fetch Details + Credits (for AI)
+                const detailRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${key}&append_to_response=credits`);
                 const detailData = await detailRes.json();
+                
+                // STORE GLOBAL DATA FOR AI & PERSIST IT
+                currentMovieData = detailData;
+                localStorage.setItem('current_movie_data', JSON.stringify(detailData));
 
-                // Update Inputs & Save
+                // Update UI
                 updateAndSave('title', detailData.title);
                 updateAndSave('year', detailData.release_date ? detailData.release_date.split('-')[0] : "N/A");
                 updateAndSave('rating', detailData.vote_average ? `${detailData.vote_average.toFixed(1)}/10` : "N/A");
@@ -430,9 +494,125 @@
             }
         }
 
+        // --- GEMINI AI POST GENERATOR (STRICT SHORT) ---
+        async function generateAIPost() {
+            const geminiKey = inputs.geminiKey.value;
+            
+            if(!geminiKey) {
+                document.getElementById('apiKeySection').classList.remove('hidden');
+                alert("Please enter your Gemini API Key first in the 'Keys' section!");
+                return;
+            }
+
+            // Persistence Check
+            if(!currentMovieData) {
+                const saved = localStorage.getItem('current_movie_data');
+                if(saved) {
+                    try { currentMovieData = JSON.parse(saved); } catch(e) {}
+                }
+            }
+
+            if(!currentMovieData) {
+                alert("No movie data found! Please search for a movie using 'Auto-Fill' first.");
+                return;
+            }
+
+            const loading = document.getElementById('aiLoading');
+            const btnText = document.getElementById('aiBtnText');
+            loading.classList.remove('hidden');
+            btnText.innerText = "Writing...";
+            
+            inputs.postOutput.value = ""; // Clear previous
+
+            const movie = currentMovieData;
+            const cast = movie.credits?.cast?.slice(0, 5).map(c => c.name).join(', ') || "Famous Actors";
+            const director = movie.credits?.crew?.find(c => c.job === 'Director')?.name || 'Unknown';
+            const year = movie.release_date ? movie.release_date.split('-')[0] : "N/A";
+            const genres = movie.genres ? movie.genres.map(g => g.name).join(', ') : "Movie";
+
+            // FEW-SHOT PROMPTING WITH STRICT LENGTH CONSTRAINT
+            const prompt = `
+            You are a professional Myanmar Movie Channel Admin on Telegram. 
+            Write a SHORT movie recommendation post in Burmese for the movie "${movie.title}" (${year}).
+
+            Movie Data:
+            - Director: ${director}
+            - Cast: ${cast}
+            - Genre: ${genres}
+            - Plot: ${movie.overview || "No synopsis available."}
+
+            STRICTLY FOLLOW THIS WRITING STYLE AND FORMAT:
+
+            1. **Header**: "${movie.title} (${year}) *********************" (Keep English Title).
+            2. **Intro**: A very short, engaging intro (1 sentence). Mention genre/cast.
+            3. **Separator**: " - ဇာတ်လမ်းအကျဉ်း -"
+            4. **Plot**: SUMMARIZE the plot in Burmese. Do NOT translate the whole thing. Keep it strictly under 5 sentences. Focus on the main conflict.
+            5. **Conclusion**: A short closing sentence.
+            6. **Constraint**: Total response length MUST be under 600 characters.
+            7. **Tone**: Casual, Friendly.
+            8. **No Links**: Do not output links.
+            `;
+
+            try {
+                // Use supported model for environment
+                const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const aiData = await aiRes.json();
+                
+                if(aiData.error) {
+                    throw new Error(aiData.error.message);
+                }
+
+                if(!aiData.candidates || aiData.candidates.length === 0) {
+                     throw new Error("No response from AI");
+                }
+
+                const aiText = aiData.candidates[0].content.parts[0].text;
+                renderFinalPost(aiText);
+
+            } catch (error) {
+                alert('Error generating text: ' + error.message);
+                console.error(error);
+            } finally {
+                loading.classList.add('hidden');
+                btnText.innerText = "Write with AI";
+            }
+        }
+
+        function renderFinalPost(aiText) {
+            const channelLink = inputs.url.value || 'https://t.me/...';
+            const movieLink = inputs.privateLink.value || 'LINK_HERE';
+
+            // Clean MD
+            let cleanText = aiText.replace(/```/g, '').replace('html', '').trim();
+
+            let finalPost = `${cleanText}\n\n`;
+            finalPost += `➖➖➖➖➖➖➖➖\n\n`;
+            finalPost += `**ဇာတ်ကားကြည့်ရန်**\n\n`;
+            finalPost += `⚠️ Channel Link ကို အရင် Join ပါ 👇\n`;
+            finalPost += `${channelLink}\n\n`;
+            finalPost += `💿 **Movie Link:**\n`;
+            finalPost += `${movieLink}`;
+
+            inputs.postOutput.value = finalPost;
+            updateCharCount(); // Trigger update
+        }
+
+        function copyPostText() {
+            inputs.postOutput.select();
+            document.execCommand('copy');
+            alert('Post copied!');
+        }
+
         function updateAndSave(key, value) {
-            inputs[key].value = value;
-            saveInputState(key, value);
+            if(inputs[key]) {
+                inputs[key].value = value;
+                saveInputState(key, value);
+            }
         }
 
         function loadAssetFromUrl(key, url) {
@@ -449,20 +629,18 @@
                     ctx.drawImage(img, 0, 0);
                     const dataURL = canvas.toDataURL('image/png');
                     localStorage.setItem('saved_' + key + '_img', dataURL);
-                } catch(e) { console.warn("Could not save fetched image to storage"); }
+                } catch(e) { console.warn("Could not save fetched image"); }
             };
             img.src = url;
         }
 
         // --- DRAWING LOGIC & LISTENERS ---
-
-        // Add Listeners to all text inputs for Auto-Save
         Object.keys(inputs).forEach(key => {
             const input = inputs[key];
             if(input && input.tagName === 'INPUT' && input.type !== 'file') {
                 input.addEventListener('input', (e) => {
-                    saveInputState(key, e.target.value); // Save on type
-                    draw();
+                    saveInputState(key, e.target.value);
+                    if(key !== 'privateLink') draw(); 
                 });
             }
         });
@@ -471,7 +649,22 @@
             inputs.blurDisplay.innerText = e.target.value + "px";
         });
 
-        // Modified Image Upload to Save to Storage
+        // New Char Counter Logic
+        const charCount = document.getElementById('charCount');
+        inputs.postOutput.addEventListener('input', updateCharCount);
+
+        function updateCharCount() {
+            const len = inputs.postOutput.value.length;
+            charCount.innerText = `${len}/1024`;
+            if(len > 1024) {
+                charCount.classList.remove('text-slate-500');
+                charCount.classList.add('text-rose-500', 'font-bold');
+            } else {
+                charCount.classList.remove('text-rose-500', 'font-bold');
+                charCount.classList.add('text-slate-500');
+            }
+        }
+
         function handleImageUpload(inputElement, assetKey, storageKey) {
             inputElement.addEventListener('change', (e) => {
                 const file = e.target.files[0];
@@ -482,13 +675,7 @@
                         img.onload = function() { 
                             assets[assetKey] = img; 
                             draw(); 
-                            // Save Image Data
-                            try {
-                                localStorage.setItem(storageKey, event.target.result);
-                            } catch(e) {
-                                console.warn("Image too large to save!");
-                                alert("Image is too large to save for next time, but will work for now.");
-                            }
+                            try { localStorage.setItem(storageKey, event.target.result); } catch(e) {}
                         }
                         img.src = event.target.result;
                     };
