@@ -654,12 +654,9 @@
             let cleanText = aiText.replace(/```/g, '').replace('html', '').trim();
 
             let finalPost = `${cleanText}\n\n`;
-            finalPost += `➖➖➖➖➖➖➖➖\n\n`;
+           
             finalPost += `**ဇာတ်ကားကြည့်ရန်**\n\n`;
-            finalPost += `⚠️ Channel Link ကို အရင် Join ပါ 👇\n`;
-            finalPost += `${channelLink}\n\n`;
-            finalPost += `💿 **Movie Link:**\n`;
-            finalPost += `${movieLink}`;
+          
 
             inputs.postOutput.value = finalPost;
             updateCharCount(); // Trigger update
